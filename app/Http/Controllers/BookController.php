@@ -14,7 +14,7 @@ class BookController extends Controller
         $genre = $request->query('genre');
 
         if (empty($title) && empty($genre)) {
-            return response()->json(['status' => false, 'error' => 'Please provide title or genre!']);
+            return response()->json(['status' => false, 'error' => 'Please provide title or genre!'], 400);
         }
         $books = Book::where('title', 'ilike', '%' . $title . '%')
                  ->orWhere('genre', 'ilike', '%' . $genre . '%')
