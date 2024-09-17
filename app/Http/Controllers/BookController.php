@@ -13,13 +13,16 @@ class BookController extends Controller
         $title = $request->query('title');
         $genre = $request->query('genre');
 
-        if (empty($title) && empty($genre)) {
-            return response()->json(['status' => false, 'error' => 'Please provide title or genre!'], 400);
-        }
-        $books = Book::where('title', 'ilike', '%' . $title . '%')
-                 ->orWhere('genre', 'ilike', '%' . $genre . '%')
-                 ->get();
+        $books = Book::orderBy('created_at', 'desc');
 
-        return response()->json(['status' => true, 'books' => $books]);
+        if(!empty($title)) {
+            $books->where('title', 'like', "%{$title}%");
+        }
+
+        if (!empty($genre)) {
+            $books->where('genre', 'like', "%{$genre}%");
+        }
+
+        return response()->json(['status' => true, 'books' => $books->get()]);
     }
 }

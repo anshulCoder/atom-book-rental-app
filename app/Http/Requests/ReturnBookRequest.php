@@ -43,6 +43,12 @@ class ReturnBookRequest extends FormRequest
             if (!$rental) {
                 $validator->errors()->add('book_id', 'You do not have an active rental for this book.');
             }
+
+            if (!empty($validator->errors())) {
+                return response()->json([
+                    'errors' => $validator->errors(),
+                ], 422);
+            }
         });
     }
 
