@@ -25,4 +25,20 @@ class BookController extends Controller
 
         return response()->json(['status' => true, 'books' => $books->get()]);
     }
+
+    public function bookStats()
+    {
+        $mostPopularBook = Book::withCount('rentals')->orderBy('rentals_count', 'desc')->first();
+        $leastPopularBook = Book::withCount('rentals')->orderBy('rentals_count', 'asc')->first();
+        $mostOverdueBook = Book::whereHas('rentals', function ($query) {
+            $query->where('overdue', true);
+        })->withCount('rentals')->orderBy('rentals_count', 'desc')->first();
+
+        return response()->json([
+            'status' => true,
+            'most_popular' => $mostPopularBook,
+            'least_popular' => $leastPopularBook,
+            'most_overdue' => $mostOverdueBook,
+        ]);
+    }
 }

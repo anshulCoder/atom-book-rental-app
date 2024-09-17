@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
 use App\Models\Rental;
+use Illuminate\Support\Facades\Log;
 
 class MarkOverdueRentals extends Command
 {
@@ -41,9 +42,10 @@ class MarkOverdueRentals extends Command
             // Send email notification
             $email = new OverdueRentalMail($mailData);
             Mail::to($rental->user->email)->send($email);
-
+            Log::info("Overdue Mail Sent to ".$rental->user->email);
             // Sending Notification
             auth()->notify(new OverdueRentalNotification($rental));
+            Log::info('Overdue Notification sent to user '. auth()->name());
         }
     }
 }

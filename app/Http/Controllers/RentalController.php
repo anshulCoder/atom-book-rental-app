@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
+use App\Http\Requests\RentBookRequest;
 use App\Http\Requests\ReturnBookRequest;
 use App\Models\Rental;
 use App\Models\Book;
@@ -11,36 +12,17 @@ use Illuminate\Support\Facades\Log;
 
 class RentalController extends Controller
 {
-    public function rentBook(Request $request, Book $book) 
+    public function rentBook(RentBookRequest $request, Book $book) 
     {
-        if ($book->available_copies < 1) {
-            return response()->json([
-                'status' => false,
-                'error' => 'Book is not available for rent.',
-            ], 422);
-        }
-        
-        // Check if the user already has an unreturned rental for the same book
-        $existingRental = Rental::where('book_id', $book->id)
-                                ->where('user_id', auth()->id())
-                                ->whereNull('returned_on')
-                                ->first();
-                                
-        if ($existingRental) {
-            return response()->json([
-                'status' => false,
-                'error' => 'You already have this book rented.',
-            ], 422);
-        }
-
         $rental = new Rental();
         $rental->user_id = auth()->id();
         $rental->book_id = $book->id;
         $rental->rented_on = now();
         $rental->due_on = now()->addWeeks(2);
         $rental->save();
-    
+        
         $book->decrement('available_copies');
+        Log::info("Renting book (id: ".$book->id.") to user id: ".auth()->id());
     
         return response()->json(['status' => true, 'message' => 'Book rented successfully']);
     }
@@ -57,7 +39,8 @@ class RentalController extends Controller
         $rental->save();
 
         $book->increment('available_copies');
-
+        Log::info('Book (id: '.$book->id.') returned by user id: '.auth()->id());
+        
         return response()->json(['status' => true, 'message' => 'Book returned successfully']);
     }
 
@@ -66,27 +49,6 @@ class RentalController extends Controller
         $rentals = Rental::where('user_id', auth()->id())->orderBy('created_at', 'desc')->get();
 
         return response()->json(['status' => true, 'rentals' => $rentals]);
-    }
-
-    public function rentalStats()
-    {
-        $mostPopularBook = Book::withCount('rentals')->orderBy('rentals_count', 'desc')->first();
-        $leastPopularBook = Book::withCount('rentals')->orderBy('rentals_count', 'asc')->first();
-        $mostOverdueBook = Book::whereHas('rentals', function ($query) {
-            $query->where('overdue', true);
-        })->withCount('rentals')->orderBy('rentals_count', 'desc')->first();
-
-        return response()->json([
-            'status' => true,
-            'most_popular' => $mostPopularBook,
-            'least_popular' => $leastPopularBook,
-            'most_overdue' => $mostOverdueBook,
-        ]);
-    }
-
-    private function validateRentBook($book)
-    {
-        
     }
 
 }
